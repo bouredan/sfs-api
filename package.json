@@ -1,19 +1,27 @@
 {
-  "name": "sfs-api",
+  "name": "@bouredan/sfs-api",
   "version": "0.1.0",
-  "description": "",
+  "description": "Semantic faceted search API.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "bouredan <daniel.bourek@gmail.com>",
+  "license": "MIT",
   "dependencies": {
     "fetch-sparql-endpoint": "^2.4.0",
     "sparqljs": "^3.5.1"
   },
   "devDependencies": {
     "typescript": "^4.5.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bouredan/sfs-api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bouredan/sfs-api/issues"
+  },
+  "homepage": "https://github.com/bouredan/sfs-api#readme"
 }
