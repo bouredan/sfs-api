@@ -4,6 +4,7 @@
   "description": "Semantic faceted search API.",
   "main": "index.js",
   "scripts": {
+    "prepublish": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

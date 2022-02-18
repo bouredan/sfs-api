@@ -1,7 +1,7 @@
 import {IBindings, SparqlEndpointFetcher} from "fetch-sparql-endpoint";
 import {VariableTerm} from "sparqljs";
 
-import {buildFacet, Facet, FacetConfig} from "./facets/Facet";
+import {buildFacet, Facet, FacetConfig} from "../facets/Facet";
 
 interface FacetSearchApiConfig {
   endpointUrl: string,
