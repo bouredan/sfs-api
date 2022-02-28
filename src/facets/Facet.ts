@@ -15,6 +15,9 @@ export interface Facet {
   setValue(value: unknown): void,
 }
 
+export type FacetOptions = Record<string, number>;
+export type FacetsOptions = Record<string, FacetOptions>;
+
 export function buildFacet(configuration: FacetConfig): Facet {
   switch (configuration.type) {
     case "select":
