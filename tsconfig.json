@@ -8,7 +8,7 @@
       "dom"
     ],
     "outDir": "./dist",
-    "target": "es5",
+    "target": "es2017",
     "declaration": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -19,10 +19,11 @@
     "strict": true
   },
   "include": [
-    "src",
-    "index.ts"
+    "index.ts",
+    "src/**/*",
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "dist"
   ]
 }

@@ -19,14 +19,17 @@
   },
   "homepage": "https://github.com/bouredan/sfs-api#readme",
   "license": "MIT",
-  "main": "index.ts",
-  "typings": "index",
+  "main": "index.js",
+  "types": "index.d.ts",
   "files": [
-    "dist/**/*"
+    "dist",
+    "index.d.ts",
+    "index.js"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc"
+    "build": "tsc",
+    "prepublish": "yarn build"
   },
   "dependencies": {
     "fetch-sparql-endpoint": "^2.4.0",

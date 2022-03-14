@@ -1,4 +1,4 @@
-export type FacetType = "select" | "checkbox";
+export type FacetType = "select" | "checkbox" | "custom";
 export type FacetOptions = Record<string, number>;
 
 export interface FacetConfig<Value = unknown> {
