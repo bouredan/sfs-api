@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/bouredan/sfs-api#readme",
   "license": "MIT",
-  "main": "dist",
+  "main": "index.ts",
   "typings": "index",
   "files": [
     "dist/**/*"
