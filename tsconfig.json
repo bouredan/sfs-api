@@ -4,7 +4,7 @@
     "incremental": true,
     "module": "commonjs",
     "lib": [
-      "es6",
+      "esnext",
       "dom"
     ],
     "outDir": "./dist",

@@ -1,31 +1,24 @@
 import {Facet, FacetConfig} from "./Facet";
 
-export class SelectFacet implements Facet {
+export class SelectFacet extends Facet<string> {
 
-  private readonly facetId: string;
-  private readonly name: string;
-  private readonly predicate: string;
-  private value: string;
-
-  constructor({id, name, predicate}: Omit<FacetConfig, "type">) {
-    this.facetId = id;
-    this.name = name;
-    this.predicate = predicate;
-    this.value = "";
+  public constructor({id, predicate}: Omit<FacetConfig<string>, "type">) {
+    super({
+      type: "select",
+      id,
+      predicate,
+      initialValue: "",
+    });
   }
 
   public generateSparql(): string {
-    const whereClause = `BIND(<${this.value}> AS ?${this.facetId})
+    const whereClause = `BIND(<${this.value}> AS ?${this.id})
                          ?id ${this.predicate} <${this.value}> . `
     return (
       `${this.value ? whereClause : ""}
       OPTIONAL { 
-        ?id ${this.predicate} ?${this.facetId} . 
+        ?id ${this.predicate} ?${this.id} . 
       }`
     );
   }
-
-  public setValue(newValue: string) {
-    this.value = newValue;
-  };
 }
