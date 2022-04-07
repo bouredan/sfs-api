@@ -1,52 +1,72 @@
-export type FacetType = "select" | "checkbox" | "custom";
-export type FacetOptions = Record<string, number>;
+import {Pattern, Query} from "sparqljs";
 
-export interface FacetConfig<Value = unknown> {
-  type: FacetType,
+import {Bindings, SfsApi} from "../SfsApi";
+
+
+export interface FacetOption {
+  value: string,
+  label: string,
+  count: number,
+}
+
+export interface FacetConfig {
   id: string,
   predicate: string,
-  initialValue: Value,
+  labelPredicates?: string[],
 }
 
 export abstract class Facet<Value = unknown> {
-  public readonly type: FacetType;
   public readonly id: string;
   public readonly predicate: string;
-  protected options: Record<string, number>;
-  protected value: Value;
+  public readonly labelPredicates: string[];
+  protected options: FacetOption[];
+  protected value: Value | undefined;
 
-  protected subscribers: ((facetOptions: FacetOptions) => void)[];
+  public sfsApi: SfsApi | undefined; // TODO
 
-  protected constructor({type, id, predicate, initialValue}: FacetConfig<Value>) {
-    this.type = type;
+  private subscribers: ((facetOptions: FacetOption[]) => void)[];
+
+  public constructor({id, predicate, labelPredicates}: FacetConfig) {
     this.id = id;
     this.predicate = predicate;
-    this.options = {};
+    this.labelPredicates = labelPredicates ?? [
+      "<http://www.w3.org/2000/01/rdf-schema#label>",
+      "<http://www.w3.org/2004/02/skos/core#prefLabel>"
+    ];
+    this.options = [];
     this.subscribers = [];
-    this.value = initialValue;
   }
 
-  public abstract generateSparql(): string;
+  public abstract getFacetConstraints(): Pattern | undefined;
 
-  public getValue(): Value {
-    return this.value;
+  public abstract buildOptionsQuery(): Query;
+
+  public abstract resetState(): void;
+
+  public refreshOptions() {
+    const optionsQuery = this.buildOptionsQuery();
+    if (!this.sfsApi) {
+      console.error("SfsApi is undefined in facet " + this.id);
+      return;
+    }
+    this.sfsApi.fetchBindings(optionsQuery).then(bindingsStream => {
+      processOptionsBindingsStream(bindingsStream).then(options => {
+        this.options = options
+        this.notifySubscribers();
+      });
+    });
   }
 
-  public setValue(value: Value): void {
+  public isActive() {
+    return !!this.value;
+  }
+
+  public setValue(value: Value) {
     this.value = value;
+    this.sfsApi?.fetchResults();
   }
 
-  public addOption(option: string) {
-    const optionCount = this.options[option];
-    this.options[option] = optionCount ? optionCount + 1 : 1;
-    this.notifySubscribers();
-  }
-
-  public resetOptions() {
-    this.options = {};
-  }
-
-  public attachSubscriber(subscriber: (facetOptions: FacetOptions) => void): void {
+  public attachSubscriber(subscriber: (facetOptions: FacetOption[]) => void) {
     const isAttached = this.subscribers.includes(subscriber);
     if (isAttached) {
       return console.log("Subscriber already attached.");
@@ -54,7 +74,7 @@ export abstract class Facet<Value = unknown> {
     this.subscribers.push(subscriber);
   }
 
-  public detachSubscriber(subscriber: (facetOptions: FacetOptions) => void): void {
+  public detachSubscriber(subscriber: (facetOptions: FacetOption[]) => void) {
     const subscriberIndex = this.subscribers.indexOf(subscriber);
     if (subscriberIndex === -1) {
       return console.log("Subscriber does not exist.");
@@ -63,6 +83,26 @@ export abstract class Facet<Value = unknown> {
   }
 
   private notifySubscribers() {
-    this.subscribers.forEach(subscriber => subscriber(this.options))
+    // const event = new CustomEvent(this.id, {detail: this.options});
+    // document.dispatchEvent(event);
+    this.subscribers.forEach(subscriber => subscriber(this.options));
   }
+}
+
+function processOptionsBindingsStream(stream: NodeJS.ReadableStream): Promise<FacetOption[]> {
+  return new Promise<FacetOption[]>((resolve, reject) => {
+    const options: FacetOption[] = [];
+    stream.on("data", (newBinding: Bindings) => {
+      const option: FacetOption = {
+        value: newBinding?.value?.value,
+        count: parseInt(newBinding?.cnt?.value),
+        label: newBinding?.label.value,
+      }
+      options.push(option);
+    });
+    stream.on("error", reject);
+    stream.on("end", () => {
+      resolve(options);
+    });
+  });
 }

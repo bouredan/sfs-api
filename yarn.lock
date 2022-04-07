@@ -160,6 +160,11 @@ rdf-string@^1.6.0:
     "@rdfjs/types" "*"
     rdf-data-factory "^1.1.0"
 
+rdfjs@^0.0.1:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/rdfjs/-/rdfjs-0.0.1.tgz#93b31a427d5d89b459e81965a9ffd892b3263e4b"
+  integrity sha1-k7MaQn1dibRZ6Bllqf/YkrMmPks=
+
 readable-stream@^3.6.0:
   version "3.6.0"
   resolved "https://registry.yarnpkg.com/readable-stream/-/readable-stream-3.6.0.tgz#337bbda3adc0706bd3e024426a286d4b4b2c9198"
