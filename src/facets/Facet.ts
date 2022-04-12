@@ -37,7 +37,7 @@ export abstract class Facet<Value = unknown> {
     this.subscribers = [];
   }
 
-  public abstract getFacetConstraints(): Pattern | undefined;
+  public abstract getFacetConstraints(): Pattern | Pattern[] | undefined;
 
   public abstract buildOptionsQuery(): Query;
 

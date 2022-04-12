@@ -5,20 +5,25 @@ import {Facet} from "./Facet";
 import {getIriWithoutArrows} from "../SfsApi";
 
 
-export class SelectFacet extends Facet<string> {
+export class CheckboxFacet extends Facet<string[]> {
 
-  public getFacetConstraints(): Pattern | undefined {
+  public getFacetConstraints(): Pattern[] | undefined {
     if (!this.value) {
       return undefined;
     }
-    return {
+    return [{
+      type: "values",
+      values: this.value.map(value => ({
+        [`?${this.id}`]: dataFactory.namedNode(value)
+      }))
+    }, {
       type: "bgp",
       triples: [{
         subject: dataFactory.variable("id"),
         predicate: dataFactory.namedNode(getIriWithoutArrows(this.predicate)),
-        object: dataFactory.namedNode(this.value),
+        object: dataFactory.variable(this.id),
       }]
-    };
+    }]
   }
 
   public buildOptionsQuery(): Query {
@@ -32,14 +37,14 @@ WHERE
         }
       GROUP BY ?value
     }
-    FILTER isIRI(?value)
-    ${this.labelPredicates.map(labelPredicate => `
+    FILTER isIRI(?value) 
+    ${this.labelPredicates.map((labelPredicate, i) => `
             OPTIONAL
-              { ?value  ${labelPredicate}  ?_label
-                FILTER langMatches(lang(?_label), "${this.sfsApi?.language}")
+              { ?value  ${labelPredicate}  ?_label${i}
+                FILTER langMatches(lang(?_label${i}), "${this.sfsApi?.language}")
               }`
       ).join(" ")}
-    BIND(coalesce(?_label, ?value) AS ?label)
+    BIND(coalesce(${this.labelPredicates.map((labelPredicate, i) => `?_label${i}, `).join("")}?value) AS ?label)
   }
 ORDER BY DESC(?cnt) ASC(?label)`
     );

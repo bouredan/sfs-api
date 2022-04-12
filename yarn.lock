@@ -2,7 +2,12 @@
 # yarn lockfile v1
 
 
-"@rdfjs/types@*":
+"@rdfjs/data-model@^2.0.1":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@rdfjs/data-model/-/data-model-2.0.1.tgz#410aeaea65de9bac605b63172baa64384b65ca98"
+  integrity sha512-oRDYpy7/fJ9NNjS+M7m+dbnhi4lOWYGbBiM/A+u9bBExnN6ifXUF5mUsFxwZaQulmwTDaMhKERdV6iKTBUMgtw==
+
+"@rdfjs/types@*", "@rdfjs/types@^1.0.1":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@rdfjs/types/-/types-1.1.0.tgz#098f180b7cccb03bb416c7b4d03baaa9d480e36b"
   integrity sha512-5zm8bN2/CC634dTcn/0AhTRLaQRjXDZs3QfcAsQKNturHT7XVWcKy/8p3P5gXl+YkZTAmy7T5M/LyiT/jbkENw==
@@ -18,6 +23,13 @@
   version "13.13.52"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-13.13.52.tgz#03c13be70b9031baaed79481c0c0cfb0045e53f7"
   integrity sha512-s3nugnZumCC//n4moGGe6tkNMyYEdaDBitVjwPxXmR5lnMG5dHePinH2EdxkG3Rh1ghFHHixAG4NJhpJW1rthQ==
+
+"@types/rdfjs__data-model@^2.0.1":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@types/rdfjs__data-model/-/rdfjs__data-model-2.0.1.tgz#69f3a9054d42502184d6be0cedbb2b77e4573487"
+  integrity sha512-WT5L593D/NwwOi1ACC4j2c7i8UFgoxbOGFsNCsqY5o0xHx2lbYXcVTeyaqbqIM2T8t1zCEY7AI6Ys8trWVypBQ==
+  dependencies:
+    "@rdfjs/types" "^1.0.1"
 
 "@types/readable-stream@^2.3.11":
   version "2.3.13"
@@ -159,11 +171,6 @@ rdf-string@^1.6.0:
   dependencies:
     "@rdfjs/types" "*"
     rdf-data-factory "^1.1.0"
-
-rdfjs@^0.0.1:
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/rdfjs/-/rdfjs-0.0.1.tgz#93b31a427d5d89b459e81965a9ffd892b3263e4b"
-  integrity sha1-k7MaQn1dibRZ6Bllqf/YkrMmPks=
 
 readable-stream@^3.6.0:
   version "3.6.0"

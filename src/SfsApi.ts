@@ -1,4 +1,4 @@
-import {IBindings, SparqlEndpointFetcher} from "fetch-sparql-endpoint";
+import {IBindings, ISparqlEndpointFetcherArgs, SparqlEndpointFetcher} from "fetch-sparql-endpoint";
 import {Generator, Parser, Query, SelectQuery, VariableTerm} from "sparqljs";
 
 import {Facet} from "./facets/Facet";
@@ -15,10 +15,11 @@ type Prefixes = { [prefix: string]: string };
 
 type ResultsSubscriber = (newResults: Results) => void;
 
-interface FacetSearchApiConfig {
+interface FacetSearchApiConfig extends ISparqlEndpointFetcherArgs {
   endpointUrl: string,
   queryTemplate: string,
   facets: Facet[],
+  language: string,
   prefixes?: Prefixes,
 }
 
@@ -29,16 +30,18 @@ export class SfsApi {
   private readonly endpointUrl: string;
   private readonly queryTemplate: SelectQuery;
   private readonly facets: Record<string, Facet>;
+  public readonly language: string;
   private readonly resultsSubscribers: ResultsSubscriber[] = [];
 
   private readonly fetcher;
 
-  public constructor({endpointUrl, queryTemplate, facets, prefixes}: FacetSearchApiConfig) {
+  public constructor({endpointUrl, queryTemplate, facets, language, prefixes, ...other}: FacetSearchApiConfig) {
     this.sparqlGenerator = new Generator({prefixes: prefixes});
     this.sparqlParser = new Parser({prefixes: prefixes});
 
     this.endpointUrl = endpointUrl;
     this.queryTemplate = this.sparqlParser.parse(queryTemplate) as SelectQuery;
+    this.language = language;
 
     this.facets = facets.reduce((acc, facet) => {
       facet.sfsApi = this;
@@ -51,11 +54,7 @@ export class SfsApi {
   }
 
   public async fetchResults(searchPattern?: string) {
-    if (searchPattern) {
-      Object.values(this.facets).forEach(facet => facet.resetState())
-
-    }
-    const query = this.buildResultsQuery();
+    const query = this.buildResultsQuery(searchPattern);
     return this.fetchBindings(query)
       .then(bindingsStream => {
         return processResultsBindingsStream(bindingsStream)
@@ -95,7 +94,7 @@ export class SfsApi {
     this.resultsSubscribers.forEach(subscriber => subscriber(newResults))
   }
 
-  private buildResultsQuery() {
+  private buildResultsQuery(searchPattern?: string) {
     const query: SelectQuery = { // shallow copy (with deep "where" clone) is made to not mutate original queryTemplate
       ...this.queryTemplate,
       where: this.queryTemplate.where ? [...this.queryTemplate.where] : []
@@ -104,7 +103,11 @@ export class SfsApi {
       if (facet.isActive()) {
         const constraints = facet.getFacetConstraints();
         if (constraints) {
-          query.where?.push(constraints);
+          if (Array.isArray(constraints)) {
+            query.where?.push(...constraints);
+          } else {
+            query.where?.push(constraints);
+          }
         }
       }
     });
@@ -129,3 +132,6 @@ function processResultsBindingsStream(stream: NodeJS.ReadableStream): Promise<Re
   });
 }
 
+export function getIriWithoutArrows(iri: string) {
+  return iri.replace(/^<(.+)>$/, "$1");
+}
