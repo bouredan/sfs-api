@@ -2,6 +2,7 @@ import {IBindings, ISparqlEndpointFetcherArgs, SparqlEndpointFetcher} from "fetc
 import {Generator, Parser, Query, SelectQuery, VariableTerm} from "sparqljs";
 
 import {Facet} from "./facets/Facet";
+import {generateFilterSearchPattern} from "./QueryParts";
 
 
 export type Bindings = IBindings;
@@ -31,9 +32,11 @@ export class SfsApi {
   private readonly queryTemplate: SelectQuery;
   private readonly facets: Record<string, Facet>;
   public readonly language: string;
-  private readonly resultsSubscribers: ResultsSubscriber[] = [];
 
+  private readonly resultsSubscribers: ResultsSubscriber[] = [];
   private readonly fetcher;
+
+  private searchPattern: string = "";
 
   public constructor({endpointUrl, queryTemplate, facets, language, prefixes, ...other}: FacetSearchApiConfig) {
     this.sparqlGenerator = new Generator({prefixes: prefixes});
@@ -50,11 +53,11 @@ export class SfsApi {
       );
     }, {});
 
-    this.fetcher = new SparqlEndpointFetcher();
+    this.fetcher = new SparqlEndpointFetcher(other);
   }
 
-  public async fetchResults(searchPattern?: string) {
-    const query = this.buildResultsQuery(searchPattern);
+  public async fetchResults() {
+    const query = this.buildResultsQuery();
     return this.fetchBindings(query)
       .then(bindingsStream => {
         return processResultsBindingsStream(bindingsStream)
@@ -65,13 +68,26 @@ export class SfsApi {
       })
   }
 
+  public async newSearch(searchPattern: string) {
+    if (searchPattern !== this.searchPattern) {
+      this.searchPattern = searchPattern;
+      Object.values(this.facets).forEach(facet => facet.resetState());
+    }
+    return this.fetchResults();
+  }
+
   public async fetchBindings(query: Query) {
     const queryString = this.sparqlGenerator.stringify(query);
     return this.fetcher.fetchBindings(this.endpointUrl, queryString);
   }
 
-  public getResourcePattern() {
-    return this.queryTemplate.where;
+  public getApiConstraints() {
+    const query = this.getQueryTemplate();
+    if (this.searchPattern) {
+      const filterPattern = generateFilterSearchPattern("_label", this.searchPattern);
+      query.where?.push(filterPattern)
+    }
+    return query.where;
   }
 
   public attachResultsSubscriber(subscriber: ResultsSubscriber) {
@@ -94,11 +110,9 @@ export class SfsApi {
     this.resultsSubscribers.forEach(subscriber => subscriber(newResults))
   }
 
-  private buildResultsQuery(searchPattern?: string) {
-    const query: SelectQuery = { // shallow copy (with deep "where" clone) is made to not mutate original queryTemplate
-      ...this.queryTemplate,
-      where: this.queryTemplate.where ? [...this.queryTemplate.where] : []
-    };
+  private buildResultsQuery() {
+    const query = this.getQueryTemplate();
+    query.where = this.getApiConstraints();
     Object.values(this.facets).forEach(facet => {
       if (facet.isActive()) {
         const constraints = facet.getFacetConstraints();
@@ -112,6 +126,13 @@ export class SfsApi {
       }
     });
     return query
+  }
+
+  private getQueryTemplate(): SelectQuery {
+    return { // shallow copy (with deep "where" clone) is made to not mutate original queryTemplate
+      ...this.queryTemplate,
+      where: this.queryTemplate.where ? [...this.queryTemplate.where] : []
+    };
   }
 }
 

@@ -14,7 +14,7 @@ export class SelectFacet extends Facet<string> {
     return {
       type: "bgp",
       triples: [{
-        subject: dataFactory.variable("id"),
+        subject: dataFactory.variable("_id"),
         predicate: dataFactory.namedNode(getIriWithoutArrows(this.predicate)),
         object: dataFactory.namedNode(this.value),
       }]
@@ -22,34 +22,30 @@ export class SelectFacet extends Facet<string> {
   }
 
   public buildOptionsQuery(): Query {
-    const resourcePattern = this.sfsApi?.getResourcePattern();
+    const resourcePattern = this.sfsApi?.getApiConstraints();
     const queryString = (
-      `SELECT DISTINCT  ?cnt ?value ?label
+      `SELECT DISTINCT  ?${this.optionCountVariable} ?${this.optionValueVariable} ?${this.optionLabelVariable}
 WHERE
-  { { SELECT DISTINCT  ?value (COUNT(DISTINCT ?id) AS ?cnt)
+  { { SELECT DISTINCT  ?${this.optionValueVariable} (COUNT(DISTINCT ?_id) AS  ?${this.optionCountVariable})
       WHERE
-        { ?id  ${this.predicate}  ?value
+        { ?_id  ${this.predicate}   ?${this.optionValueVariable}
         }
-      GROUP BY ?value
+      GROUP BY  ?${this.optionValueVariable}
     }
-    FILTER isIRI(?value)
-    ${this.labelPredicates.map(labelPredicate => `
+    FILTER isIRI( ?${this.optionValueVariable})
+    ${this.labelPredicates.map((labelPredicate, i) => `
             OPTIONAL
-              { ?value  ${labelPredicate}  ?_label
-                FILTER langMatches(lang(?_label), "${this.sfsApi?.language}")
+              {  ?${this.optionValueVariable}  ${labelPredicate}   ?${this.optionLabelVariable}${i}
+                FILTER langMatches(lang( ?${this.optionLabelVariable}${i}), "${this.sfsApi?.language ?? "en"}")
               }`
       ).join(" ")}
-    BIND(coalesce(?_label, ?value) AS ?label)
+    BIND(coalesce(${this.labelPredicates.map((labelPredicate, i) => ` ?${this.optionLabelVariable}${i}, `).join("")} ?${this.optionValueVariable}) AS  ?${this.optionLabelVariable})
   }
-ORDER BY DESC(?cnt) ASC(?label)`
+ORDER BY DESC( ?${this.optionCountVariable}) ASC( ?${this.optionLabelVariable})`
     );
     const query = this.sfsApi?.sparqlParser.parse(queryString) as SelectQuery;
     // @ts-ignore
     query.where[0].patterns[0].where.push(resourcePattern);
     return query;
-  }
-
-  public resetState(): void {
-    this.value = undefined;
   }
 }
