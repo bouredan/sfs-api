@@ -1,0 +1,15 @@
+
+type SfsEventType =
+  | "NEW_SEARCH"
+  | "FACET_VALUE_CHANGED"
+  | "FETCH_FACET_OPTIONS_PENDING"
+  | "FETCH_FACET_OPTIONS_SUCCESS"
+  | "FETCH_FACET_OPTIONS_ERROR"
+  | "FETCH_RESULTS_PENDING"
+  | "FETCH_RESULTS_SUCCESS"
+  | "FETCH_RESULTS_ERROR";
+
+interface SfsEvent {
+  type: SfsEventType,
+  value: unknown,
+}
