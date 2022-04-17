@@ -2,7 +2,7 @@ import {Pattern, Query} from "sparqljs";
 
 import {Bindings, SfsApi} from "../SfsApi";
 
-export interface FacetState<Value> {
+export interface FacetState<Value = unknown> {
   options: FacetOption[],
   value?: Value,
 }
@@ -29,17 +29,20 @@ export abstract class Facet<Value = unknown> {
   protected options: FacetOption[];
   protected value: Value | undefined;
 
-  public sfsApi: SfsApi | undefined; // TODO how to deal with this
+  /* This property is set by SfsApi class when constructing from passed facets */
+  public _sfsApi: SfsApi | undefined;
 
   private subscribers: ((facetOptions: FacetState<Value>) => void)[];
 
   public constructor({id, predicate, labelPredicates}: FacetConfig) {
     this.id = id;
     this.predicate = predicate;
+
+    /* Default values when no label predicates are set. */
     this.labelPredicates = labelPredicates ?? [
       "<http://www.w3.org/2000/01/rdf-schema#label>",
       "<http://www.w3.org/2004/02/skos/core#prefLabel>"
-    ]; // TODO should there be default values?
+    ];
     this.optionValueVariable = `_${this.id}Value`;
     this.optionCountVariable = `_${this.id}Count`;
     this.optionLabelVariable = `_${this.id}Label`;
@@ -47,21 +50,22 @@ export abstract class Facet<Value = unknown> {
     this.subscribers = [];
   }
 
-  public abstract getFacetConstraints(): Pattern | Pattern[] | undefined;
+  public abstract getFacetConstraints(): Pattern[] | undefined;
 
   public abstract buildOptionsQuery(): Query;
 
   public refreshOptions() {
     const optionsQuery = this.buildOptionsQuery();
-    if (!this.sfsApi) {
-      console.error("SfsApi is undefined in facet " + this.id);
-      return;
-    }
+    this.sfsApi.eventStream.emitEvent("FETCH_FACET_OPTIONS_PENDING", this.value);
     this.sfsApi.fetchBindings(optionsQuery).then(bindingsStream => {
       this.processOptionsBindingsStream(bindingsStream).then(options => {
         this.options = options
+        this.sfsApi.eventStream.emitEvent("FETCH_FACET_OPTIONS_SUCCESS");
         this.notifySubscribers();
       });
+    }).catch(error => {
+      this.sfsApi.eventStream.emitEvent("FETCH_FACET_OPTIONS_ERROR", error);
+      throw error;
     });
   }
 
@@ -76,7 +80,7 @@ export abstract class Facet<Value = unknown> {
 
   public setValue(value: Value) {
     this.value = value;
-    this.sfsApi?.fetchResults();
+    this.sfsApi.fetchResults();
     this.notifySubscribers();
   }
 
@@ -94,6 +98,13 @@ export abstract class Facet<Value = unknown> {
       return console.log("Subscriber does not exist.");
     }
     this.subscribers.splice(subscriberIndex, 1);
+  }
+
+  public get sfsApi() {
+    if (!this._sfsApi) {
+      throw ("Facet was not assigned to an API. Check documentation for more details."); // TODO add links
+    }
+    return this._sfsApi;
   }
 
   private notifySubscribers() {

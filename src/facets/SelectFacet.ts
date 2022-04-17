@@ -1,28 +1,21 @@
 import {Pattern, Query, SelectQuery} from "sparqljs";
-import dataFactory from "@rdfjs/data-model";
 
 import {Facet} from "./Facet";
-import {getIriWithoutArrows} from "../SfsApi";
 
 
 export class SelectFacet extends Facet<string> {
 
-  public getFacetConstraints(): Pattern | undefined {
+  public getFacetConstraints(): Pattern[] | undefined {
     if (!this.value) {
       return undefined;
     }
-    return {
-      type: "bgp",
-      triples: [{
-        subject: dataFactory.variable("_id"),
-        predicate: dataFactory.namedNode(getIriWithoutArrows(this.predicate)),
-        object: dataFactory.namedNode(this.value),
-      }]
-    };
+    const selectFacetConstraintsQuery = `SELECT * WHERE { ?_id ${this.predicate} <${this.value}> }`
+    const parsedQuery = this.sfsApi.sparqlParser.parse(selectFacetConstraintsQuery) as SelectQuery;
+    return parsedQuery?.where;
   }
 
   public buildOptionsQuery(): Query {
-    const resourcePattern = this.sfsApi?.getApiConstraints();
+    const apiConstraints = this.sfsApi.getApiConstraints();
     const queryString = (
       `SELECT DISTINCT  ?${this.optionCountVariable} ?${this.optionValueVariable} ?${this.optionLabelVariable}
 WHERE
@@ -36,16 +29,17 @@ WHERE
     ${this.labelPredicates.map((labelPredicate, i) => `
             OPTIONAL
               {  ?${this.optionValueVariable}  ${labelPredicate}   ?${this.optionLabelVariable}${i}
-                FILTER langMatches(lang( ?${this.optionLabelVariable}${i}), "${this.sfsApi?.language ?? "en"}")
+                FILTER langMatches(lang( ?${this.optionLabelVariable}${i}), "${this.sfsApi.language}")
               }`
       ).join(" ")}
     BIND(coalesce(${this.labelPredicates.map((labelPredicate, i) => ` ?${this.optionLabelVariable}${i}, `).join("")} ?${this.optionValueVariable}) AS  ?${this.optionLabelVariable})
   }
 ORDER BY DESC( ?${this.optionCountVariable}) ASC( ?${this.optionLabelVariable})`
     );
-    const query = this.sfsApi?.sparqlParser.parse(queryString) as SelectQuery;
-    // @ts-ignore
-    query.where[0].patterns[0].where.push(resourcePattern);
+    const query = this.sfsApi.sparqlParser.parse(queryString) as SelectQuery;
+    if (apiConstraints) {
+      query.where?.push(...apiConstraints);
+    }
     return query;
   }
 }

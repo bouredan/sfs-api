@@ -3,6 +3,7 @@ import {Generator, Parser, Query, SelectQuery, VariableTerm} from "sparqljs";
 
 import {Facet} from "./facets/Facet";
 import {generateFilterSearchPattern} from "./QueryParts";
+import {SfsEventStream} from "./Events";
 
 
 export type Bindings = IBindings;
@@ -27,11 +28,12 @@ interface FacetSearchApiConfig extends ISparqlEndpointFetcherArgs {
 export class SfsApi {
   public readonly sparqlParser
   public readonly sparqlGenerator;
+  public readonly language: string;
+  public readonly eventStream: SfsEventStream;
 
   private readonly endpointUrl: string;
   private readonly queryTemplate: SelectQuery;
-  private readonly facets: Record<string, Facet>;
-  public readonly language: string;
+  private readonly facets: Facet[];
 
   private readonly resultsSubscribers: ResultsSubscriber[] = [];
   private readonly fetcher;
@@ -41,37 +43,54 @@ export class SfsApi {
   public constructor({endpointUrl, queryTemplate, facets, language, prefixes, ...other}: FacetSearchApiConfig) {
     this.sparqlGenerator = new Generator({prefixes: prefixes});
     this.sparqlParser = new Parser({prefixes: prefixes});
+    this.eventStream = new SfsEventStream();
 
     this.endpointUrl = endpointUrl;
     this.queryTemplate = this.sparqlParser.parse(queryTemplate) as SelectQuery;
     this.language = language;
 
-    this.facets = facets.reduce((acc, facet) => {
-      facet.sfsApi = this;
-      return (
-        {...acc, [facet.id]: facet}
-      );
-    }, {});
+    this.facets = facets.map(facet => {
+      facet._sfsApi = this;
+      return facet;
+    });
 
     this.fetcher = new SparqlEndpointFetcher(other);
   }
 
+  /**
+   * Builds results query from actual state and fetches new results using it.
+   * Also streams events FETCH_RESULT_XXX to communicate its progress.
+   *
+   * @returns Promise containing the {@link Results}
+   */
   public async fetchResults() {
     const query = this.buildResultsQuery();
+    this.eventStream.emitEvent("FETCH_RESULTS_PENDING");
     return this.fetchBindings(query)
       .then(bindingsStream => {
         return processResultsBindingsStream(bindingsStream)
           .then(results => {
             this.notifyResultsSubscribers(results);
+            this.eventStream.emitEvent("FETCH_RESULTS_SUCCESS");
             return results;
           })
       })
+      .catch(error => {
+        this.eventStream.emitEvent("FETCH_RESULTS_ERROR", error);
+        throw error;
+      })
   }
 
+  /**
+   * Initiates new search. Resets all facet states and returns new results via {@link fetchResults}.
+   *
+   * @returns Promise containing the {@link Results}
+   */
   public async newSearch(searchPattern: string) {
+    this.eventStream.emitEvent("NEW_SEARCH", searchPattern);
     if (searchPattern !== this.searchPattern) {
       this.searchPattern = searchPattern;
-      Object.values(this.facets).forEach(facet => facet.resetState());
+      this.facets.forEach(facet => facet.resetState());
     }
     return this.fetchResults();
   }
@@ -113,15 +132,11 @@ export class SfsApi {
   private buildResultsQuery() {
     const query = this.getQueryTemplate();
     query.where = this.getApiConstraints();
-    Object.values(this.facets).forEach(facet => {
+    this.facets.forEach(facet => {
       if (facet.isActive()) {
         const constraints = facet.getFacetConstraints();
         if (constraints) {
-          if (Array.isArray(constraints)) {
-            query.where?.push(...constraints);
-          } else {
-            query.where?.push(constraints);
-          }
+          query.where?.push(...constraints);
         }
       }
     });
