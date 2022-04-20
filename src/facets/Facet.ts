@@ -39,8 +39,9 @@ export abstract class Facet<Value = unknown> {
   public readonly optionValueVariable: string;
   public readonly optionCountVariable: string;
   public readonly optionLabelVariable: string;
-  protected options: FacetOption[];
-  protected _value: Value | undefined;
+
+  private options: FacetOption[];
+  private _value: Value | undefined;
 
   /**
    *  This property is set by SfsApi class if it is passed to it on construction.
