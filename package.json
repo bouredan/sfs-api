@@ -27,7 +27,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "prepublish": "npx typedoc index.ts && yarn build"
+    "prepublish": "yarn build && npx typedoc index.ts"
   },
   "dependencies": {
     "@rdfjs/data-model": "^2.0.1",

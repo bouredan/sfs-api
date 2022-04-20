@@ -3,6 +3,9 @@ import {Pattern, Query, SelectQuery} from "sparqljs";
 import {Facet} from "./Facet";
 
 
+/**
+ * Class representing select-like facet.
+ */
 export class SelectFacet extends Facet<string> {
 
   public getFacetConstraints(): Pattern[] | undefined {
@@ -15,7 +18,7 @@ export class SelectFacet extends Facet<string> {
   }
 
   public buildOptionsQuery(): Query {
-    const apiConstraints = this.sfsApi.getApiConstraints();
+    const apiConstraints = this.sfsApi.getAllConstraints(this.id);
     const queryString = (
       `SELECT DISTINCT  ?${this.optionCountVariable} ?${this.optionValueVariable} ?${this.optionLabelVariable}
 WHERE
@@ -38,7 +41,8 @@ ORDER BY DESC( ?${this.optionCountVariable}) ASC( ?${this.optionLabelVariable})`
     );
     const query = this.sfsApi.sparqlParser.parse(queryString) as SelectQuery;
     if (apiConstraints) {
-      query.where?.push(...apiConstraints);
+      // @ts-ignore This is safe since we know how the query above will be parsed.
+      query.where[0].patterns[0].where.push(...apiConstraints);
     }
     return query;
   }

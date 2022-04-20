@@ -2,23 +2,36 @@ import {Pattern, Query} from "sparqljs";
 
 import {Bindings, SfsApi} from "../SfsApi";
 
-export interface FacetState<Value = unknown> {
-  options: FacetOption[],
-  value?: Value,
-}
-
+/**
+ * Interface representing facet options.
+ */
 export interface FacetOption {
   value: string,
   label: string,
+  /**
+   * Number of how many times is this value present in results.
+   */
   count: number,
 }
 
+/**
+ * Interface represents facet configuration.
+ */
 export interface FacetConfig {
   id: string,
   predicate: string,
+  /**
+   * Expected predicates for option labels. First to match is used in order of array elements.
+   */
   labelPredicates?: string[],
 }
 
+/**
+ * Class representing facet and its state.
+ * Handles facet updates and fetching its own options.
+ *
+ * Can be extended to create custom facet.
+ */
 export abstract class Facet<Value = unknown> {
   public readonly id: string;
   public readonly predicate: string;
@@ -27,12 +40,14 @@ export abstract class Facet<Value = unknown> {
   public readonly optionCountVariable: string;
   public readonly optionLabelVariable: string;
   protected options: FacetOption[];
-  protected value: Value | undefined;
+  protected _value: Value | undefined;
 
-  /* This property is set by SfsApi class when constructing from passed facets */
+  /**
+   *  This property is set by SfsApi class if it is passed to it on construction.
+   *  {@link _sfsApi} is used to construct this facet's queries and to access event stream.
+   *   Without setting this property, this facet cannot function properly.
+   */
   public _sfsApi: SfsApi | undefined;
-
-  private subscribers: ((facetOptions: FacetState<Value>) => void)[];
 
   public constructor({id, predicate, labelPredicates}: FacetConfig) {
     this.id = id;
@@ -47,75 +62,115 @@ export abstract class Facet<Value = unknown> {
     this.optionCountVariable = `_${this.id}Count`;
     this.optionLabelVariable = `_${this.id}Label`;
     this.options = [];
-    this.subscribers = [];
   }
 
+  /**
+   * Facet constraints are patterns which this method represents for other facets or SfsApi.
+   *
+   * @returns facet constraints
+   */
   public abstract getFacetConstraints(): Pattern[] | undefined;
 
+  /**
+   * Abstract method for building query used for fetching this facet options from current state.
+   * State of {@link SfsApi} should be accounted too.
+   * This method is implemented in individual facet types.
+   *
+   * @returns options query
+   */
   public abstract buildOptionsQuery(): Query;
 
+  /**
+   * Fetches and sets new options from current state.
+   * Emits events of fetch progress.
+   */
   public refreshOptions() {
     const optionsQuery = this.buildOptionsQuery();
-    this.sfsApi.eventStream.emitEvent("FETCH_FACET_OPTIONS_PENDING", this.value);
+    this.sfsApi.eventStream.emit({
+      type: "FETCH_FACET_OPTIONS_PENDING",
+      facetId: this.id
+    });
     this.sfsApi.fetchBindings(optionsQuery).then(bindingsStream => {
       this.processOptionsBindingsStream(bindingsStream).then(options => {
         this.options = options
-        this.sfsApi.eventStream.emitEvent("FETCH_FACET_OPTIONS_SUCCESS");
-        this.notifySubscribers();
+        this.sfsApi.eventStream.emit({
+          type: "FETCH_FACET_OPTIONS_SUCCESS",
+          facetId: this.id,
+          options,
+        });
       });
     }).catch(error => {
-      this.sfsApi.eventStream.emitEvent("FETCH_FACET_OPTIONS_ERROR", error);
+      this.sfsApi.eventStream.emit({
+        type: "FETCH_FACET_OPTIONS_ERROR",
+        facetId: this.id,
+        error,
+      });
       throw error;
     });
   }
 
+  /**
+   * Returns if this facet is active.
+   * Active facets are facets with a value and thus should be accounted in {@link SfsApi} all constraints.
+   */
   public isActive(): boolean {
-    return !!this.value || (Array.isArray(this.value) ? this.value.length > 0 : false);
-  }
-
-  public resetState() {
-    this.value = undefined;
-    this.refreshOptions(); // TODO handle race condition on new search (some are reseted some not)
-  };
-
-  public setValue(value: Value) {
-    this.value = value;
-    this.sfsApi.fetchResults();
-    this.notifySubscribers();
-  }
-
-  public attachSubscriber(subscriber: (facetState: FacetState<Value>) => void) {
-    const isAttached = this.subscribers.includes(subscriber);
-    if (isAttached) {
-      return console.log("Subscriber already attached.");
-    }
-    this.subscribers.push(subscriber);
-  }
-
-  public detachSubscriber(subscriber: (facetOptions: FacetState<Value>) => void) {
-    const subscriberIndex = this.subscribers.indexOf(subscriber);
-    if (subscriberIndex === -1) {
-      return console.log("Subscriber does not exist.");
-    }
-    this.subscribers.splice(subscriberIndex, 1);
+    return Boolean(this.value) || (Array.isArray(this.value) ? this.value.length > 0 : false);
   }
 
   public get sfsApi() {
     if (!this._sfsApi) {
-      throw ("Facet was not assigned to an API. Check documentation for more details."); // TODO add links
+      throw ("Facet was not assigned to an API. Check documentation for more details.");
     }
     return this._sfsApi;
   }
 
-  private notifySubscribers() {
-    // const event = new CustomEvent(this.id, {detail: this.options});
-    // document.dispatchEvent(event);
-    this.subscribers.forEach(subscriber => subscriber({
-      options: this.options,
-      value: this.value,
-    }));
+  public set sfsApi(newSfsApi) {
+    if (!newSfsApi) {
+      throw ("Cannot assign undefined sfsApi. Check documentation for more details.");
+    }
+    if (this._sfsApi != newSfsApi) {
+      this._sfsApi = newSfsApi;
+      this._sfsApi.eventStream.on("RESET_STATE", () => {
+        this.setValue(undefined, false);
+      });
+      this._sfsApi.eventStream.on("NEW_SEARCH", () => {
+        this.refreshOptions();
+      });
+      this._sfsApi.eventStream.on("FACET_VALUE_CHANGED", (event) => {
+        if (event.facetId !== this.id && event.refreshOtherFacets) {
+          this.refreshOptions();
+        }
+      });
+    }
   }
 
+  public get value() {
+    return this._value;
+  }
+
+  public set value(newValue) {
+    this.setValue(newValue, true);
+  }
+
+  private setValue(newValue: Value | undefined, refreshOtherFacets?: boolean) {
+    this._value = newValue;
+    this.sfsApi.eventStream.emit({
+      type: "FACET_VALUE_CHANGED",
+      facetId: this.id,
+      value: this.value,
+      refreshOtherFacets
+    });
+  };
+
+  /**
+   * Transforms bindings stream from SPARQL endpoint to {@link FacetOption[]} structure.
+   * Bindings variables are identified by {@link optionValueVariable}, {@link optionCountVariable}
+   * and {@link optionLabelVariable}.
+   *
+   * @param stream - stream to process
+   * @returns stream of facet options
+   * @private
+   */
   private processOptionsBindingsStream(stream: NodeJS.ReadableStream): Promise<FacetOption[]> {
     return new Promise<FacetOption[]>((resolve, reject) => {
       const options: FacetOption[] = [];
