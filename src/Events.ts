@@ -3,6 +3,7 @@ import {Results} from "./SfsApi";
 
 /**
  * Class used for emitting and subscribing to events.
+ * It is the main interface for facets communication between each other and also the user interface.
  */
 export class SfsEventStream {
 

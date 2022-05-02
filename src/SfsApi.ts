@@ -28,10 +28,35 @@ export type Prefixes = { [prefix: string]: string };
  * Extends {@link ISparqlEndpointFetcherArgs} which are passed to {@link SparqlEndpointFetcher}.
  */
 export interface SfsApiConfig extends ISparqlEndpointFetcherArgs {
+  /**
+   * URL of SPARQL endpoint.
+   */
   endpointUrl: string,
+  /**
+   * Query used for fetching results. Will be enriched with active facet patterns.
+   * IMPORTANT: Use _id variable as the primary row identifier. Facets use this variable to build their own queries.
+   */
   queryTemplate: string,
+  /**
+   * Facets used in this SfsApi.
+   */
   facets: Facet[],
+  /**
+   * Language used for facet labels.
+   */
   language: string,
+  /**
+   * Prefixes used in results or facet queries.
+   *
+   * @remarks
+   *
+   * Use record-like object e.g. {
+   *     rdfs: "http://www.w3.org/2000/01/rdf-schema#",
+   *     skos: "http://www.w3.org/2004/02/skos/core#",
+   *     owl: "https://www.w3.org/2002/07/owl#",
+   *     dct: "http://purl.org/dc/terms/"
+   *   }
+   */
   prefixes?: Prefixes,
 }
 
