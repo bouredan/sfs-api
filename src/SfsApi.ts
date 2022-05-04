@@ -36,7 +36,7 @@ export interface SfsApiConfig extends ISparqlEndpointFetcherArgs {
    * Query used for fetching results. Will be enriched with active facet patterns.
    * IMPORTANT: Use _id variable as the primary row identifier. Facets use this variable to build their own queries.
    */
-  queryTemplate: string,
+  baseQuery: string,
   /**
    * Facets used in this SfsApi.
    */
@@ -76,7 +76,7 @@ export class SfsApi {
   public readonly sparqlGenerator;
   /**
    * Language used for filtering right labels for facets.
-   * Should be the same as used in {@link queryTemplate}.
+   * Should be the same as used in {@link baseQuery}.
    */
   public readonly language: string;
 
@@ -87,21 +87,21 @@ export class SfsApi {
   public readonly eventStream: SfsEventStream;
 
   private readonly endpointUrl: string;
-  private readonly queryTemplate: SelectQuery;
+  private readonly baseQuery: SelectQuery;
   private readonly facets: Facet[];
 
   private readonly fetcher;
 
   private searchPattern: string = "";
 
-  public constructor({endpointUrl, queryTemplate, facets, language, prefixes, ...fetcherProps}: SfsApiConfig) {
+  public constructor({endpointUrl, baseQuery, facets, language, prefixes, ...fetcherProps}: SfsApiConfig) {
     this.sparqlGenerator = new Generator({prefixes: prefixes});
     this.sparqlParser = new Parser({prefixes: prefixes});
     this.eventStream = new SfsEventStream();
     this.eventStream.on("FACET_VALUE_CHANGED", () => this.fetchResults());
 
     this.endpointUrl = endpointUrl;
-    this.queryTemplate = this.sparqlParser.parse(queryTemplate) as SelectQuery;
+    this.baseQuery = this.sparqlParser.parse(baseQuery) as SelectQuery;
     this.language = language;
 
     this.facets = facets.map(facet => {
@@ -147,11 +147,11 @@ export class SfsApi {
    * Initiates new search with provided {@link searchPattern}.
    * Resets all facet states and returns new results via {@link fetchResults}.
    *
-   * @param searchPattern - ?_label variable in queryTemplate has to contain this search pattern
+   * @param searchPattern - ?_label variable in baseQuery has to contain this search pattern
    *
    * @returns Promise containing the {@link Results}
    */
-  public async newSearch(searchPattern: string) {
+  public async newSearch(searchPattern: string = "") {
     this.searchPattern = searchPattern;
     this.eventStream.emit({
       type: "RESET_STATE",
@@ -175,12 +175,12 @@ export class SfsApi {
   }
 
   /**
-   * Used to get API and all active facet constraints.
+   * Used to get API and all active facet constraints. Optionally, all active facets except facet of provided facetId.
    *
    * @param exceptFacetId - facet id of facet which should not be accounted in returned constraints.
    */
   public getAllConstraints(exceptFacetId?: string) {
-    const query = this.getQueryTemplate();
+    const query = this.getBaseQuery();
     if (this.searchPattern) {
       const filterPattern = generateSparqlFilterPattern("_label", this.searchPattern);
       query.where?.push(filterPattern)
@@ -194,15 +194,15 @@ export class SfsApi {
   }
 
   private buildResultsQuery() {
-    const query = this.getQueryTemplate();
+    const query = this.getBaseQuery();
     query.where = this.getAllConstraints();
-    return query
+    return query;
   }
 
-  private getQueryTemplate(): SelectQuery {
-    return { // shallow copy (with deep "where" clone) is made to not mutate original queryTemplate
-      ...this.queryTemplate,
-      where: this.queryTemplate.where ? [...this.queryTemplate.where] : []
+  private getBaseQuery(): SelectQuery {
+    return { // shallow copy (with deep "where" clone) is made to not mutate original baseQuery
+      ...this.baseQuery,
+      where: this.baseQuery.where ? [...this.baseQuery.where] : []
     };
   }
 }
