@@ -106,7 +106,6 @@ export abstract class Facet<Value = unknown> {
         facetId: this.id,
         error: error,
       });
-      throw error;
     });
   }
 
