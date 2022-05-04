@@ -98,7 +98,9 @@ export class SfsApi {
     this.sparqlGenerator = new Generator({prefixes: prefixes});
     this.sparqlParser = new Parser({prefixes: prefixes});
     this.eventStream = new SfsEventStream();
-    this.eventStream.on("FACET_VALUE_CHANGED", () => this.fetchResults());
+    this.eventStream.on("FACET_VALUE_CHANGED", () => {
+      this.fetchResults()
+    });
 
     this.endpointUrl = endpointUrl;
     this.baseQuery = this.sparqlParser.parse(baseQuery) as SelectQuery;

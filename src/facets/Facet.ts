@@ -132,13 +132,13 @@ export abstract class Facet<Value = unknown> {
     if (this._sfsApi != newSfsApi) {
       this._sfsApi = newSfsApi;
       this._sfsApi.eventStream.on("RESET_STATE", () => {
-        this.setValue(undefined, false);
+        this._value = undefined;
       });
       this._sfsApi.eventStream.on("NEW_SEARCH", () => {
         this.refreshOptions();
       });
       this._sfsApi.eventStream.on("FACET_VALUE_CHANGED", (event) => {
-        if (event.facetId !== this.id && event.refreshOtherFacets) {
+        if (event.facetId !== this.id) {
           this.refreshOptions();
         }
       });
@@ -150,18 +150,13 @@ export abstract class Facet<Value = unknown> {
   }
 
   public set value(newValue) {
-    this.setValue(newValue, true);
-  }
-
-  private setValue(newValue: Value | undefined, refreshOtherFacets?: boolean) {
     this._value = newValue;
     this.sfsApi.eventStream.emit({
       type: "FACET_VALUE_CHANGED",
       facetId: this.id,
-      value: this.value,
-      refreshOtherFacets
+      value: this.value
     });
-  };
+  }
 
   /**
    * Transforms bindings stream from SPARQL endpoint to {@link FacetOption[]} structure.

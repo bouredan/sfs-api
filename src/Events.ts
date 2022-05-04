@@ -70,8 +70,7 @@ export interface NewSearchEvent {
 export interface FacetValueChangedEvent {
   type: "FACET_VALUE_CHANGED",
   facetId: string,
-  value: unknown,
-  refreshOtherFacets?: boolean,
+  value: unknown
 }
 
 export interface FetchFacetOptionsPendingEvent {
