@@ -104,7 +104,7 @@ export abstract class Facet<Value = unknown> {
       this.sfsApi.eventStream.emit({
         type: "FETCH_FACET_OPTIONS_ERROR",
         facetId: this.id,
-        error,
+        error: error,
       });
       throw error;
     });
