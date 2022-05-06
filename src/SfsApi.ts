@@ -1,9 +1,11 @@
-import dataFactory from "@rdfjs/data-model";
+import {DataFactory} from "rdf-data-factory";
 import {IBindings, ISparqlEndpointFetcherArgs, SparqlEndpointFetcher} from "fetch-sparql-endpoint";
 import {FilterPattern, Generator, Parser, Query, SelectQuery, VariableTerm} from "sparqljs";
 
 import {Facet} from "./facets/Facet";
 import {SfsEventStream} from "./Events";
+
+const dataFactory = new DataFactory();
 
 /**
  * Bindings represent SPARQL bindings of variables from results query.
@@ -33,8 +35,11 @@ export interface SfsApiConfig extends ISparqlEndpointFetcherArgs {
    */
   endpointUrl: string,
   /**
-   * Query used for fetching results. Will be enriched with active facet patterns.
-   * IMPORTANT: Use _id variable as the primary row identifier. Facets use this variable to build their own queries.
+   * SPARQL SELECT query used for fetching results. Will be enriched with active facet patterns.
+   *
+   * **IMPORTANT: baseQuery has to return _id and _label variable.**
+   * - _id variable is used as primary row identifier and other facets use this variable to build their own queries.
+   * - _label variable is used when using search query.
    */
   baseQuery: string,
   /**
@@ -112,10 +117,12 @@ export class SfsApi {
     });
 
     this.fetcher = new SparqlEndpointFetcher(fetcherProps);
+
+    checkIfBaseQueryIsValid(this.baseQuery);
   }
 
   /**
-   * Builds results query from actual state and fetches new results using it.
+   * Builds results query from current state and fetches new results using it.
    * Also streams events FETCH_RESULT_XXX to communicate its progress.
    *
    * @returns Promise containing the {@link Results}
@@ -267,4 +274,23 @@ function generateSparqlFilterPattern(variableToFilter: string, filterValue: stri
       ]
     }
   };
+}
+
+function checkIfBaseQueryIsValid(baseQuery: SelectQuery) {
+  let _idPresent = false;
+  let _labelPresent = false;
+  baseQuery.variables.forEach(variable => {
+    if ("value" in variable) {
+      if (variable.value === "_id") {
+        _idPresent = true;
+      } else if (variable.value === "_label") {
+        _labelPresent = true;
+      }
+    }
+  });
+  if (!_idPresent) {
+    throw new Error("SfsApi baseQuery has to SELECT ?_id variable. Check documentation for more info.");
+  } else if (!_labelPresent) {
+    throw new Error("SfsApi baseQuery has to SELECT ?_label variable. Check documentation for more info.");
+  }
 }

@@ -11,7 +11,7 @@ First you need to define facets which you want to use. At this moment only 2 fac
 [CheckboxFacet](src/facets/CheckboxFacet.ts) and [SelectFacet](src/facets/SelectFacet.ts). However, you can implement 
 your own facet by extending abstract [Facet](src/facets/Facet.ts) class. 
 
-Example configuration:
+Example facets:
 ```
 export const nationalityFacet = new SelectFacet({
   id: "nationality",
@@ -26,7 +26,12 @@ export const birthPlaceFacet = new CheckboxFacet({
 });
 ```
 
-Class for interacting with facet search is [SfsApi](src/SfsApi.ts).
+Class for interacting with facet search is [SfsApi](src/SfsApi.ts).  
+**IMPORTANT: baseQuery has to return _id and _label variable.**  
+- _id variable is used as primary row identifier and other facets use this variable to build their own queries.
+- _label variable is used when using search query.  
+
+More about configuration properties can be found in [SfsApi documentation](https://bouredan.github.io/sfs-api/classes/SfsApi.html).
 
 Example configuration:
 ```
@@ -34,7 +39,7 @@ const language = "en";
 export const sfsApiDbpedia = new SfsApi({
   endpointUrl: "https://dbpedia.org/sparql",
   facets: [nationalityFacet, birthPlaceFacet],
-  queryTemplate:
+  baseQuery:
     `SELECT DISTINCT ?_id ?_label 
   WHERE 
   { ?_id a dbo:Writer .    
@@ -59,13 +64,11 @@ export const sfsApiDbpedia = new SfsApi({
   },
 });
 ```
+###[API reference](https://bouredan.github.io/sfs-api)
 
 ## Events
 SfsApi and Facets emit [Events](src/Events.ts). 
 You can subscribe to these events and update your UI according to them.
-
-
-More info about all classes can be found in **[API reference](https://bouredan.github.io/sfs-api)**.
 
 ## Examples 
 Check out [React demo](https://github.com/bouredan/sfs-react-demo) 
