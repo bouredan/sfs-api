@@ -40,6 +40,7 @@ export interface SfsApiConfig extends ISparqlEndpointFetcherArgs {
    * **IMPORTANT: baseQuery has to return _id and _label variable.**
    * - _id variable is used as primary row identifier and other facets use this variable to build their own queries.
    * - _label variable is used when using search query.
+   * - All SPARQL variables used by sfs-api are prefixed with "_" so you should not name your other variables like this.
    */
   baseQuery: string,
   /**
@@ -66,7 +67,7 @@ export interface SfsApiConfig extends ISparqlEndpointFetcherArgs {
 }
 
 /**
- * Class representing whole facet search API. It is core class of this library.
+ * Class representing whole facet search API. It is the core class of this library.
  */
 export class SfsApi {
   /**

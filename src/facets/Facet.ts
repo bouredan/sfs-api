@@ -18,10 +18,21 @@ export interface FacetOption {
  * Interface represents facet configuration.
  */
 export interface FacetConfig {
+  /**
+   * Id is used to identify {@link Facet}s.
+   * This id has to be unique within one {@link SfsApi}.
+   */
   id: string,
+  /**
+   * Predicate represents predicate in RDF Triple used for querying facet options.
+   * This predicate will be applied to subject ?_id from {@link SfsApiConfig.baseQuery} and object will be the facet option.
+   *
+   * For more variability, you can implement your class extending {@link Facet}.
+   */
   predicate: string,
   /**
    * Expected predicates for option labels. First to match is used in order of array elements.
+   * If none is provided or none match option id (its IRI) will be used.
    */
   labelPredicates?: string[],
 }
@@ -66,7 +77,7 @@ export abstract class Facet<Value = unknown> {
   }
 
   /**
-   * Facet constraints are patterns which this method represents for other facets or SfsApi.
+   * Facet constraints are patterns which this method represents for other {@link Facet}s or {@link SfsApi}.
    *
    * @returns facet constraints
    */
