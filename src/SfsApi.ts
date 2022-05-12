@@ -3,7 +3,7 @@ import {IBindings, ISparqlEndpointFetcherArgs, SparqlEndpointFetcher} from "fetc
 import {FilterPattern, Generator, Parser, Query, SelectQuery, VariableTerm} from "sparqljs";
 
 import {Facet} from "./facets/Facet";
-import {SfsEventStream} from "./Events";
+import {EventStream} from "./Events";
 
 const dataFactory = new DataFactory();
 
@@ -90,7 +90,7 @@ export class SfsApi {
    * Sole event stream used in this library.
    * Facets and API emit their events there and listen for other events.
    */
-  public readonly eventStream: SfsEventStream;
+  public readonly eventStream: EventStream;
 
   private readonly endpointUrl: string;
   private readonly baseQuery: SelectQuery;
@@ -103,7 +103,7 @@ export class SfsApi {
   public constructor({endpointUrl, baseQuery, facets, language, prefixes, ...fetcherProps}: SfsApiConfig) {
     this.sparqlGenerator = new Generator({prefixes: prefixes});
     this.sparqlParser = new Parser({prefixes: prefixes});
-    this.eventStream = new SfsEventStream();
+    this.eventStream = new EventStream();
     this.eventStream.on("FACET_VALUE_CHANGED", () => {
       this.fetchResults()
     });

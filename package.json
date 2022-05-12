@@ -27,7 +27,8 @@
   "scripts": {
     "test": "jest",
     "build": "tsc && jest",
-    "prepublish": "tsc && jest && npx typedoc index.ts"
+    "docs": "npx typedoc index.ts",
+    "prepublish": "tsc && jest "
   },
   "dependencies": {
     "fetch-sparql-endpoint": "^2.4.0",

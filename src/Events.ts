@@ -5,9 +5,9 @@ import {Results} from "./SfsApi";
  * Class used for emitting and subscribing to events.
  * It is the main interface for facets communication between each other and also the user interface.
  */
-export class SfsEventStream {
+export class EventStream {
 
-  private readonly subscribers = new Map<SfsEventType, ((event: SfsEvent) => void)[]>();
+  private readonly subscribers = new Map<EventType, ((event: Event) => void)[]>();
 
   /**
    * Used for subscribing to events.
@@ -17,11 +17,11 @@ export class SfsEventStream {
    * @param eventType - event type to subscribe
    * @param callback
    */
-  public on<T extends SfsEvent["type"]>(eventType: T, callback: (event: Extract<SfsEvent, { type: T }>) => void) {
+  public on<T extends Event["type"]>(eventType: T, callback: (event: Extract<Event, { type: T }>) => void) {
     const eventSubscribers = this.subscribers.get(eventType) ?? [];
     // TODO this is safe but fix type inference here to avoid "as"
-    if (!eventSubscribers.includes(callback as (event: SfsEvent) => void)) {
-      eventSubscribers.push(callback as (event: SfsEvent) => void);
+    if (!eventSubscribers.includes(callback as (event: Event) => void)) {
+      eventSubscribers.push(callback as (event: Event) => void);
     }
     this.subscribers.set(eventType, eventSubscribers);
   }
@@ -31,12 +31,12 @@ export class SfsEventStream {
    *
    * @param event - event to emit
    */
-  public emit(event: SfsEvent) {
+  public emit(event: Event) {
     this.subscribers.get(event.type)?.forEach(subscriber => subscriber(event));
   }
 }
 
-export type SfsEventType =
+export type EventType =
   | "RESET_STATE"
   | "NEW_SEARCH"
   | "FACET_VALUE_CHANGED"
@@ -47,7 +47,7 @@ export type SfsEventType =
   | "FETCH_RESULTS_SUCCESS"
   | "FETCH_RESULTS_ERROR";
 
-export type SfsEvent =
+export type Event =
   | ResetStateEvent
   | NewSearchEvent
   | FacetValueChangedEvent
