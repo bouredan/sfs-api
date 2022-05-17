@@ -1,6 +1,6 @@
 {
   "name": "sfs-api",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "Semantic faceted search for modern web applications.",
   "keywords": [
     "sparql",
