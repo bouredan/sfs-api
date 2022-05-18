@@ -1,10 +1,10 @@
 # sfs-api
-SFS (Semantic Faceted Search) is a library for implementing semantic faceted search in modern web applications.
+SFS (Semantic Faceted Search) is a library for implementing semantic faceted search in modern web application.
 
 If you want to use SFS in a React app, check out [react-sfs](https://www.npmjs.com/package/react-sfs).
 
 ## Installation
-Install via `yarn add sfs-api` or `npm install sfs-api`.
+Install via `npm install sfs-api` or `yarn add sfs-api`.
 
 ## Configuration and usage
 First you need to define facets which you want to use. At this moment only 2 facet types are supported - 
@@ -64,7 +64,7 @@ export const sfsApiDbpedia = new SfsApi({
   },
 });
 ```
-### [API reference](https://bouredan.github.io/sfs-api)
+###[API reference](https://bouredan.github.io/sfs-api)
 
 ## Events
 SfsApi and Facets emit [Events](src/Events.ts). 
