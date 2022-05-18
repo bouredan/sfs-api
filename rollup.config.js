@@ -1,35 +1,23 @@
-import dts from 'rollup-plugin-dts'
-import esbuild from 'rollup-plugin-esbuild'
+import {defineConfig} from 'rollup';
+import typescript from '@rollup/plugin-typescript';
+import commonjs from "@rollup/plugin-commonjs";
 
-const name = require('./package.json').main.replace(/\.js$/, '')
+import pkg from './package.json';
 
-const bundle = config => ({
-  ...config,
-  input: 'src/index.ts',
-  external: id => !/^[./]/.test(id),
-})
+const dependencies = Object.keys(require('./package.json').dependencies)
 
-export default [
-  bundle({
-    plugins: [esbuild()],
-    output: [
-      {
-        file: `${name}.js`,
-        format: 'cjs',
-        sourcemap: true,
-      },
-      {
-        file: `${name}.mjs`,
-        format: 'es',
-        sourcemap: true,
-      },
+export default defineConfig ([
+  // CommonJS
+  {
+    input: 'src/index.ts',
+    plugins: [
+      typescript(), // so Rollup can convert TypeScript to JavaScript
+      commonjs(),
     ],
-  }),
-  bundle({
-    plugins: [dts()],
-    output: {
-      file: `${name}.d.ts`,
-      format: 'es',
-    },
-  }),
-]
+    external: dependencies,
+    output: [
+      { file: pkg.main, format: 'cjs' },
+      { file: pkg.module, format: 'es' }
+    ]
+  }
+]);
