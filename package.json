@@ -1,6 +1,6 @@
 {
   "name": "sfs-api",
-  "version": "1.0.10",
+  "version": "1.0.9",
   "description": "Semantic faceted search API.",
   "keywords": [
     "sparql",
@@ -20,7 +20,7 @@
   "homepage": "https://github.com/bouredan/sfs-api",
   "license": "MIT",
   "main": "dist/sfs-api.js",
-  "module": "dist/sfs-api.mjs",
+  "module": "dist/sfs-api.esm.js",
   "typings": "dist/sfs-api.d.ts",
   "files": [
     "dist"
