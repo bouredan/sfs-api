@@ -1,7 +1,7 @@
 {
   "name": "sfs-api",
-  "version": "1.0.7",
-  "description": "Semantic faceted search API.",
+  "version": "1.0.11",
+  "description": "Semantic faceted search for modern web applications.",
   "keywords": [
     "sparql",
     "query",
@@ -24,6 +24,13 @@
   "files": [
     "dist"
   ],
+  "directories": {
+    "doc": "docs"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node"
+  },
   "scripts": {
     "test": "jest",
     "build": "tsc && jest",
@@ -43,12 +50,5 @@
     "ts-jest": "^28.0.1",
     "typedoc": "^0.22.15",
     "typescript": "^4.6.4"
-  },
-  "directories": {
-    "doc": "docs"
-  },
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node"
   }
 }

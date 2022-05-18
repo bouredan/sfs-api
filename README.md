@@ -1,17 +1,21 @@
 # sfs-api
-SFS (Semantic Faceted Search) is a library for implementing semantic faceted search in modern web application.
+
+SFS (Semantic Faceted Search) is a library for implementing semantic faceted search in modern web applications.
 
 If you want to use SFS in a React app, check out [react-sfs](https://www.npmjs.com/package/react-sfs).
 
 ## Installation
-Install via `npm install sfs-api` or `yarn add sfs-api`.
+
+Install via `yarn add sfs-api` or `npm install sfs-api`.
 
 ## Configuration and usage
-First you need to define facets which you want to use. At this moment only 2 facet types are supported - 
-[CheckboxFacet](src/facets/CheckboxFacet.ts) and [SelectFacet](src/facets/SelectFacet.ts). However, you can implement 
-your own facet by extending abstract [Facet](src/facets/Facet.ts) class. 
+
+First you need to define facets which you want to use. At this moment only 2 facet types are supported -
+[CheckboxFacet](src/facets/CheckboxFacet.ts) and [SelectFacet](src/facets/SelectFacet.ts). However, you can implement
+your own facet by extending abstract [Facet](src/facets/Facet.ts) class.
 
 Example facets:
+
 ```
 export const nationalityFacet = new SelectFacet({
   id: "nationality",
@@ -27,13 +31,16 @@ export const birthPlaceFacet = new CheckboxFacet({
 ```
 
 Class for interacting with facet search is [SfsApi](src/SfsApi.ts).  
-**IMPORTANT: baseQuery has to return _id and _label variable.**  
-- _id variable is used as primary row identifier and other facets use this variable to build their own queries.
-- _label variable is used when using search query.  
+**IMPORTANT: baseQuery has to return _id and _label variable.**
 
-More about configuration properties can be found in [SfsApi documentation](https://bouredan.github.io/sfs-api/classes/SfsApi.html).
+- _id variable is used as primary row identifier and other facets use this variable to build their own queries.
+- _label variable is used when using search query.
+
+More about configuration properties can be found
+in [SfsApi documentation](https://bouredan.github.io/sfs-api/classes/SfsApi.html).
 
 Example configuration:
+
 ```
 const language = "en";
 export const sfsApiDbpedia = new SfsApi({
@@ -64,12 +71,15 @@ export const sfsApiDbpedia = new SfsApi({
   },
 });
 ```
-###[API reference](https://bouredan.github.io/sfs-api)
+
+### [API reference](https://bouredan.github.io/sfs-api)
 
 ## Events
-SfsApi and Facets emit [Events](src/Events.ts). 
+
+SfsApi and Facets emit [Events](src/Events.ts).
 You can subscribe to these events and update your UI according to them.
 
-## Examples 
-Check out [React demo](https://github.com/bouredan/sfs-react-demo) 
+## Examples
+
+Check out [React demo](https://github.com/bouredan/sfs-react-demo)
 with the use of [react-sfs](https://www.npmjs.com/package/react-sfs).
