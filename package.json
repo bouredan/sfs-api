@@ -34,7 +34,7 @@
   "scripts": {
     "test": "jest",
     "build": "tsc && jest",
-    "docs": "npx typedoc index.ts",
+    "docs": "npx typedoc src/index.ts",
     "prepublish": "tsc && jest "
   },
   "dependencies": {

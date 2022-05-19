@@ -1,4 +1,4 @@
-import {SfsApi} from "../src/SfsApi";
+import {SfsApi} from "../src";
 
 describe('Configuration of SfsApi', () => {
   it('should create SfsApi on right config', () => {

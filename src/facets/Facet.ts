@@ -51,7 +51,16 @@ export abstract class Facet<Value = unknown> {
   public readonly optionCountVariable: string;
   public readonly optionLabelVariable: string;
 
-  private options: FacetOption[];
+  /**
+   * Current facet options.
+   */
+  public options: FacetOption[];
+
+  /**
+   * True if this facet is currently fetching options.
+   */
+  public isFetching: boolean = false;
+
   private _value: Value | undefined;
 
   /**
@@ -98,26 +107,33 @@ export abstract class Facet<Value = unknown> {
    */
   public refreshOptions() {
     const optionsQuery = this.buildOptionsQuery();
+    this.isFetching = true;
     this.sfsApi.eventStream.emit({
       type: "FETCH_FACET_OPTIONS_PENDING",
       facetId: this.id
     });
-    this.sfsApi.fetchBindings(optionsQuery).then(bindingsStream => {
-      this.processOptionsBindingsStream(bindingsStream).then(options => {
-        this.options = options
+    return this.sfsApi.fetchBindings(optionsQuery)
+      .then(bindingsStream => this.processOptionsBindingsStream(bindingsStream)
+        .then(options => {
+          this.isFetching = false;
+          this.options = options;
+          this.sfsApi.eventStream.emit({
+            type: "FETCH_FACET_OPTIONS_SUCCESS",
+            facetId: this.id,
+            options,
+          });
+          return options;
+        })
+      )
+      .catch(error => {
+        this.isFetching = false;
         this.sfsApi.eventStream.emit({
-          type: "FETCH_FACET_OPTIONS_SUCCESS",
+          type: "FETCH_FACET_OPTIONS_ERROR",
           facetId: this.id,
-          options,
+          error: error,
         });
+        throw error;
       });
-    }).catch(error => {
-      this.sfsApi.eventStream.emit({
-        type: "FETCH_FACET_OPTIONS_ERROR",
-        facetId: this.id,
-        error: error,
-      });
-    });
   }
 
   /**

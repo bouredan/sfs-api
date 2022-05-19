@@ -92,6 +92,16 @@ export class SfsApi {
    */
   public readonly eventStream: EventStream;
 
+  /**
+   * Last fetched results;
+   */
+  public results: Results | undefined;
+
+  /**
+   * True if this class is currently fetching results.
+   */
+  public isFetching: boolean = false;
+
   private readonly endpointUrl: string;
   private readonly baseQuery: SelectQuery;
   private readonly facets: Facet[];
@@ -105,7 +115,7 @@ export class SfsApi {
     this.sparqlParser = new Parser({prefixes: prefixes});
     this.eventStream = new EventStream();
     this.eventStream.on("FACET_VALUE_CHANGED", () => {
-      this.fetchResults()
+      this.fetchResults();
     });
 
     this.endpointUrl = endpointUrl;
@@ -130,21 +140,24 @@ export class SfsApi {
    */
   public async fetchResults() {
     const query = this.buildResultsQuery();
+    this.isFetching = true;
     this.eventStream.emit({
       type: "FETCH_RESULTS_PENDING",
     });
     return this.fetchBindings(query)
-      .then(bindingsStream => {
-        return processResultsBindingsStream(bindingsStream)
-          .then(results => {
-            this.eventStream.emit({
-              type: "FETCH_RESULTS_SUCCESS",
-              results
-            });
-            return results;
-          })
-      })
+      .then(bindingsStream => processResultsBindingsStream(bindingsStream)
+        .then(results => {
+          this.results = results;
+          this.isFetching = false;
+          this.eventStream.emit({
+            type: "FETCH_RESULTS_SUCCESS",
+            results
+          });
+          return results;
+        })
+      )
       .catch(error => {
+        this.isFetching = false;
         this.eventStream.emit({
           type: "FETCH_RESULTS_ERROR",
           error: error,
